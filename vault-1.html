@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#07070f"/>
+<title>VAULT – Finance Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07070f;--bg2:#0d0c1c;--surf:#121120;--surf2:#1a1830;
+  --bdr:#22203a;--text:#eceaff;--muted:#4e4a6a;--muted2:#6e6a8e;
+  --acc:#9d72ff;--acc2:#5f2ee8;--acc3:#c4a8ff;
+  --grn:#00cc85;--red:#ff3060;--ylw:#f5c030;
+  --ff1:'Syne',sans-serif;--ff2:'DM Mono',monospace;
+  --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px)
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--ff2);-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+::-webkit-scrollbar{width:0}
+input,select,textarea,button{font-family:var(--ff2)}
+#app{max-width:480px;margin:0 auto;min-height:100dvh;position:relative}
+.screen{display:none;flex-direction:column;min-height:100dvh}
+.screen.on{display:flex}
+
+/* SPLASH */
+#splash{background:var(--bg);align-items:center;justify-content:center;gap:16px}
+.splash-logo{font-family:var(--ff1);font-size:56px;font-weight:800;background:linear-gradient(135deg,#c4a8ff,#9d72ff,#5f2ee8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:fadeUp .7s ease both}
+.splash-tag{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);animation:fadeUp .7s .15s ease both}
+.dots{display:flex;gap:7px;margin-top:8px;animation:fadeUp .5s .3s ease both}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--acc);animation:pulse 1.2s infinite}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,80%,100%{opacity:.2}40%{opacity:1}}
+
+/* AUTH */
+#authScr{overflow-y:auto}
+.auth-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 22px;min-height:100dvh;background:radial-gradient(ellipse 90% 50% at 50% -5%,#1e0f44,transparent 70%)}
+.auth-logo{font-family:var(--ff1);font-size:50px;font-weight:800;background:linear-gradient(135deg,#c4a8ff,#9d72ff,#5f2ee8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.02em}
+.auth-tag{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-top:5px;margin-bottom:36px}
+.auth-card{width:100%;max-width:370px;background:var(--surf);border:1px solid var(--bdr);border-radius:24px;padding:26px 22px;box-shadow:0 24px 64px #0009}
+
+/* tab */
+.ttog{display:flex;background:var(--bg2);border-radius:12px;padding:4px;gap:4px;margin-bottom:22px}
+.ttog-btn{flex:1;padding:9px;border:none;border-radius:9px;cursor:pointer;font-size:12px;font-weight:500;background:none;color:var(--muted);transition:all .2s;letter-spacing:.04em}
+.ttog-btn.on{background:var(--surf2);color:var(--text);box-shadow:0 2px 8px #0004}
+
+/* form */
+.fg{margin-bottom:13px}
+.fl{display:block;font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px}
+.fi{width:100%;background:var(--bg2);border:1px solid var(--bdr);border-radius:11px;color:var(--text);padding:12px 14px;font-size:14px;outline:none;transition:border .2s,box-shadow .2s}
+.fi:focus{border-color:var(--acc);box-shadow:0 0 0 3px #9d72ff18}
+.fi::placeholder{color:var(--muted)}
+.fi.big{font-family:var(--ff1);font-size:28px;font-weight:800;padding:14px}
+.pw-wrap{position:relative}
+.pw-wrap .fi{padding-right:44px}
+.pw-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;font-size:16px}
+.err-box{color:var(--red);font-size:11px;padding:9px 13px;background:#ff306014;border-radius:9px;margin-bottom:13px;line-height:1.6;border:1px solid #ff306028}
+.strength-bar{height:3px;border-radius:2px;margin-top:6px;background:var(--bdr);transition:all .3s}
+.strength-bar.w{background:var(--red);width:33%}.strength-bar.m{background:var(--ylw);width:66%}.strength-bar.s{background:var(--grn);width:100%}
+.strength-lbl{font-size:10px;margin-top:4px}
+.strength-lbl.w{color:var(--red)}.strength-lbl.m{color:var(--ylw)}.strength-lbl.s{color:var(--grn)}
+.auth-foot{text-align:center;font-size:12px;color:var(--muted);margin-top:14px}
+.auth-foot button{background:none;border:none;color:var(--acc);cursor:pointer;font-size:12px;font-family:var(--ff2);text-decoration:underline;text-underline-offset:3px}
+
+/* buttons */
+.btn{width:100%;padding:14px;border:none;border-radius:12px;font-family:var(--ff1);font-size:15px;font-weight:700;cursor:pointer;transition:opacity .15s,transform .12s;letter-spacing:.03em}
+.btn:active{opacity:.85;transform:scale(.98)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-p{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;box-shadow:0 4px 20px #9d72ff30}
+.btn-g{background:linear-gradient(135deg,#00cc85,#059669);color:#fff}
+.btn-r{background:linear-gradient(135deg,var(--red),#b0163e);color:#fff}
+.btn-ghost{width:100%;padding:12px;background:none;border:1px solid var(--bdr);color:var(--muted);border-radius:12px;cursor:pointer;margin-top:10px;font-size:13px;transition:all .15s}
+.btn-ghost:hover{border-color:var(--text);color:var(--text)}
+
+/* MAIN */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:calc(var(--sat)+18px) 18px 10px;flex-wrap:wrap;gap:8px}
+.hdr-logo{font-family:var(--ff1);font-size:22px;font-weight:800;background:linear-gradient(135deg,var(--acc3),var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hdr-user{font-size:10px;color:var(--muted);margin-top:2px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.logout-btn{background:none;border:1px solid var(--bdr);color:var(--muted);border-radius:9px;padding:6px 12px;font-size:10px;cursor:pointer;letter-spacing:.07em;text-transform:uppercase;transition:all .15s}
+.logout-btn:hover{color:var(--red);border-color:var(--red)}
+.content{flex:1;overflow-y:auto;padding:0 16px 16px;-webkit-overflow-scrolling:touch}
+.spacer{height:calc(var(--sab) + 84px)}
+
+/* NAV */
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(10,9,20,.97);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--bdr);display:flex;justify-content:space-around;align-items:center;padding:8px 0 calc(var(--sab)+10px);z-index:200}
+.nb{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--muted);cursor:pointer;transition:color .15s;padding:0 10px;min-width:52px}
+.nb.on{color:var(--acc)}
+.nb span{font-size:9px;letter-spacing:.07em;text-transform:uppercase}
+.fab{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;margin-top:-22px;box-shadow:0 4px 28px #9d72ff44;transition:transform .15s}
+.fab:active{transform:scale(.91)}
+
+/* CARDS */
+.card{background:var(--surf);border:1px solid var(--bdr);border-radius:18px;padding:18px 16px;margin-bottom:12px}
+.sec{font-size:10px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px}
+
+/* BALANCE */
+.bal-card{background:linear-gradient(155deg,#191440,#0e0c22);border:1px solid #2d2860;border-radius:22px;padding:24px 20px;margin-bottom:12px;position:relative;overflow:hidden}
+.bal-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 80% 20%,#9d72ff12,transparent);pointer-events:none}
+.bal-lbl{font-size:10px;color:#7a6aaa;letter-spacing:.18em;text-transform:uppercase;margin-bottom:8px}
+.bal-num{font-family:var(--ff1);font-size:36px;font-weight:800;letter-spacing:-.02em;line-height:1;word-break:break-all}
+.pos{color:var(--acc3)}.neg{color:var(--red)}
+.bal-row{display:flex;margin-top:20px}
+.bs{flex:1}
+.bs-lbl{font-size:9px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px}
+.bs-val{font-size:14px;font-weight:500}
+.bdiv{width:1px;background:#2d2860;margin:0 16px}
+
+/* CHART */
+.bars{display:flex;gap:6px;align-items:flex-end;height:72px}
+.bc{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.bp{width:100%;display:flex;gap:2px;align-items:flex-end;height:55px}
+.b{border-radius:3px 3px 0 0;flex:1;transition:height .65s cubic-bezier(.4,0,.2,1)}
+.bi{background:#00cc8540}.be{background:#ff306040}
+.blbl{font-size:8px;color:var(--muted)}
+.leg{display:flex;gap:14px;margin-top:10px}
+.ld{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.li{display:flex;align-items:center;gap:5px;font-size:9px;color:var(--muted)}
+.cb-row{margin-bottom:10px}
+.cb-top{display:flex;justify-content:space-between;margin-bottom:5px}
+.cb-name{font-size:12px;color:#b0a8cc}
+.cb-val{font-size:12px;color:var(--red)}
+.cb-bg{height:4px;background:var(--surf2);border-radius:2px;overflow:hidden}
+.cb-fill{height:100%;background:linear-gradient(90deg,var(--red),var(--acc));border-radius:2px;transition:width .65s}
+
+/* TXN ROW */
+.tr{display:flex;align-items:center;gap:11px;padding:12px 13px;border-radius:14px;background:var(--surf);margin-bottom:8px;flex-wrap:wrap;transition:background .15s}
+.tr:hover{background:var(--surf2)}
+.ti{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.ti-in{background:#00cc8512}.ti-out{background:#ff306012}
+.tm{flex:1;min-width:0}
+.tn{font-size:13px;font-weight:500;color:#d4ceea;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.td{font-size:10px;color:var(--muted);margin-top:2px}
+.ta{font-size:13px;font-weight:500;flex-shrink:0}
+.ta.in{color:var(--grn)}.ta.out{color:var(--red)}
+.tbtns{display:flex;gap:6px;width:100%;padding-left:53px;margin-top:5px}
+.ab{background:none;border:1px solid var(--bdr);color:var(--muted);border-radius:8px;padding:4px 12px;font-size:11px;cursor:pointer;transition:all .15s}
+.ab:hover{color:var(--text);border-color:var(--muted2)}
+.ab.del:hover{color:var(--red);border-color:var(--red)}
+
+/* FORM */
+.ftitle{font-family:var(--ff1);font-size:22px;font-weight:800;margin-bottom:20px}
+.type-toggle{display:flex;background:var(--bg2);border-radius:12px;padding:4px;gap:4px;margin-bottom:20px}
+.type-btn{flex:1;padding:11px;border:none;border-radius:9px;cursor:pointer;font-size:13px;font-weight:500;background:none;color:var(--muted);transition:all .2s;font-family:var(--ff2)}
+.type-btn.in{background:var(--grn);color:#fff}
+.type-btn.out{background:var(--red);color:#fff}
+.chips{display:flex;gap:7px;flex-wrap:wrap}
+.chip{border:1px solid var(--bdr);background:none;border-radius:20px;padding:7px 13px;font-size:12px;cursor:pointer;color:var(--muted);white-space:nowrap;transition:all .15s;font-family:var(--ff2)}
+.chip:hover{border-color:var(--muted2);color:var(--text)}
+.chip.si{background:var(--grn);border-color:var(--grn);color:#fff}
+.chip.so{background:var(--red);border-color:var(--red);color:#fff}
+.frow{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap}
+.fchip{border:1px solid var(--bdr);background:none;border-radius:20px;padding:7px 14px;font-size:11px;cursor:pointer;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-family:var(--ff2);transition:all .15s}
+.fchip:hover{border-color:var(--muted2);color:var(--text)}
+.fchip.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+
+/* TOAST */
+.toast{position:fixed;bottom:calc(var(--sab)+90px);left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 24px;border-radius:20px;font-size:13px;z-index:999;pointer-events:none;white-space:nowrap;box-shadow:0 4px 24px #0007;animation:tin .28s ease}
+@keyframes tin{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.empty{text-align:center;padding:50px 20px;color:var(--muted);font-size:13px;line-height:1.9}
+.ei{font-size:40px;margin-bottom:14px}
+
+/* CONFIRM */
+.ov{position:fixed;inset:0;background:#000a;z-index:500;display:flex;align-items:flex-end;justify-content:center;animation:fin .15s}
+@keyframes fin{from{opacity:0}to{opacity:1}}
+.dlg{background:var(--surf2);border-radius:22px 22px 0 0;padding:26px 20px calc(var(--sab)+26px);width:100%;max-width:480px;animation:sup .25s ease}
+@keyframes sup{from{transform:translateY(70px);opacity:0}to{transform:translateY(0);opacity:1}}
+.dlg h3{font-family:var(--ff1);font-size:19px;margin-bottom:8px}
+.dlg p{color:var(--muted);font-size:13px;margin-bottom:20px;line-height:1.6}
+.dlg-btns{display:flex;gap:10px}
+.dlg-btns .btn{flex:1;margin:0}
+.sms-box{background:linear-gradient(135deg,#17133a,#0e0c20);border:1px solid #9d72ff30;border-radius:14px;padding:16px;margin-bottom:12px}
+.sms-ttl{color:var(--acc);font-size:12px;font-weight:500;margin-bottom:6px}
+.sms-body{color:var(--muted);font-size:11px;line-height:1.8}
+.pat{background:var(--bg2);border-radius:10px;padding:12px 14px;margin-top:10px}
+.pat p{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.pat code{display:block;font-size:11px;color:var(--grn);margin:3px 0}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- SPLASH -->
+  <div class="screen on" id="splash">
+    <div class="splash-logo">VAULT</div>
+    <div class="splash-tag">Personal Finance · TZS</div>
+    <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+  </div>
+
+  <!-- AUTH -->
+  <div class="screen" id="authScr">
+    <div class="auth-wrap">
+      <div class="auth-logo">VAULT</div>
+      <div class="auth-tag">Personal Finance · TZS</div>
+      <div class="auth-card">
+        <div class="ttog">
+          <button class="ttog-btn on" id="tab-login" onclick="authTab('login')">Login</button>
+          <button class="ttog-btn" id="tab-signup" onclick="authTab('signup')">Sign Up</button>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <div id="loginForm">
+          <div class="fg">
+            <label class="fl">Email</label>
+            <input class="fi" type="email" id="lEmail" placeholder="you@example.com" autocomplete="email"/>
+          </div>
+          <div class="fg">
+            <label class="fl">Password</label>
+            <div class="pw-wrap">
+              <input class="fi" type="password" id="lPass" placeholder="••••••••" autocomplete="current-password"/>
+              <button class="pw-eye" onclick="togglePw('lPass',this)" tabindex="-1">👁</button>
+            </div>
+          </div>
+          <div class="err-box" id="lErr" style="display:none"></div>
+          <button class="btn btn-p" onclick="doLogin()">Login to VAULT</button>
+          <div class="auth-foot">No account? <button onclick="authTab('signup')">Create one free</button></div>
+        </div>
+
+        <!-- SIGNUP FORM -->
+        <div id="signupForm" style="display:none">
+          <div class="fg">
+            <label class="fl">Your Name</label>
+            <input class="fi" type="text" id="sName" placeholder="e.g. John Doe" autocomplete="name"/>
+          </div>
+          <div class="fg">
+            <label class="fl">Email</label>
+            <input class="fi" type="email" id="sEmail" placeholder="you@example.com" autocomplete="email"/>
+          </div>
+          <div class="fg">
+            <label class="fl">Password</label>
+            <div class="pw-wrap">
+              <input class="fi" type="password" id="sPass" placeholder="Min. 6 characters" autocomplete="new-password" oninput="checkStr(this.value)"/>
+              <button class="pw-eye" onclick="togglePw('sPass',this)" tabindex="-1">👁</button>
+            </div>
+            <div class="strength-bar" id="sbar"></div>
+            <div class="strength-lbl" id="slbl"></div>
+          </div>
+          <div class="fg">
+            <label class="fl">Confirm Password</label>
+            <div class="pw-wrap">
+              <input class="fi" type="password" id="sPass2" placeholder="Repeat password" autocomplete="new-password"/>
+              <button class="pw-eye" onclick="togglePw('sPass2',this)" tabindex="-1">👁</button>
+            </div>
+          </div>
+          <div class="err-box" id="sErr" style="display:none"></div>
+          <button class="btn btn-p" onclick="doSignup()">Create Account</button>
+          <div class="auth-foot">Already have an account? <button onclick="authTab('login')">Login</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div class="screen" id="mainScr">
+    <div class="hdr">
+      <div>
+        <div class="hdr-logo">VAULT</div>
+        <div class="hdr-user" id="hdrUser"></div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">Logout</button>
+    </div>
+    <div class="content" id="content"></div>
+    <div class="spacer"></div>
+    <nav class="nav">
+      <button class="nb on" id="nb-dash" onclick="go('dash')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span>Home</span>
+      </button>
+      <button class="nb" id="nb-list" onclick="go('list')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        <span>History</span>
+      </button>
+      <button class="nb" id="nb-add" onclick="go('add')">
+        <div class="fab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+        <span style="margin-top:4px">Add</span>
+      </button>
+      <button class="nb" id="nb-sms" onclick="go('sms')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>SMS</span>
+      </button>
+      <button class="nb" id="nb-export" onclick="go('export')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>Export</span>
+      </button>
+    </nav>
+  </div>
+
+  <div id="toast" style="display:none" class="toast"></div>
+  <div id="ov" style="display:none" class="ov" onclick="closeConf()">
+    <div class="dlg" onclick="event.stopPropagation()">
+      <h3 id="ct"></h3><p id="cm"></p>
+      <div class="dlg-btns">
+        <button class="btn btn-ghost" style="margin:0" onclick="closeConf()">Cancel</button>
+        <button class="btn btn-r" id="cok">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STORAGE ───────────────────────────────────────────────────────
+const LS={
+  get:k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}},
+  set:(k,v)=>localStorage.setItem(k,JSON.stringify(v)),
+  del:k=>localStorage.removeItem(k)
+};
+const UKEY='vault_users_v1', SKEY='vault_sess_v1';
+const txKey=e=>'vault_txn_v1_'+e.toLowerCase().trim();
+const getUsers=()=>LS.get(UKEY)||{};
+const saveUsers=u=>LS.set(UKEY,u);
+const getTxn=e=>LS.get(txKey(e))||[];
+const saveTxn=(e,d)=>LS.set(txKey(e),d);
+
+// simple hash — good enough for local-only storage
+function hashPass(p){
+  let h=5381;
+  for(let i=0;i<p.length;i++) h=((h<<5)+h)^p.charCodeAt(i);
+  return (h>>>0).toString(36)+'_'+p.length+'_'+(p.split('').reverse().join('').charCodeAt(0)||0);
+}
+
+// ── STATE ─────────────────────────────────────────────────────────
+let USER=null, TXN=[], VIEW='dash', EDIT=null, ADD_TYPE='expense', FILTER='all', SEL_CAT='food';
+
+// ── CATS ──────────────────────────────────────────────────────────
+const CATS={
+  income:[
+    {id:'salary',l:'Salary',i:'💼'},{id:'freelance',l:'Freelance',i:'🖥️'},
+    {id:'investment',l:'Investment',i:'📈'},{id:'mpesa_in',l:'M-Pesa In',i:'📱'},
+    {id:'airtel_in',l:'Airtel In',i:'📲'},{id:'tigo_in',l:'Tigo In',i:'📟'},
+    {id:'gift',l:'Gift',i:'🎁'},{id:'other_in',l:'Other',i:'➕'},
+  ],
+  expense:[
+    {id:'food',l:'Food & Drink',i:'🍔'},{id:'housing',l:'Housing',i:'🏠'},
+    {id:'transport',l:'Transport',i:'🚗'},{id:'health',l:'Health',i:'💊'},
+    {id:'entertainment',l:'Entertainment',i:'🎬'},{id:'shopping',l:'Shopping',i:'🛍️'},
+    {id:'utilities',l:'Utilities',i:'⚡'},{id:'education',l:'Education',i:'📚'},
+    {id:'mpesa_out',l:'M-Pesa Out',i:'📤'},{id:'airtel_out',l:'Airtel Out',i:'📤'},
+    {id:'tigo_out',l:'Tigo Out',i:'📤'},{id:'other_out',l:'Other',i:'➖'},
+  ]
+};
+const ALL_CATS=[...CATS.income,...CATS.expense];
+const cat=id=>ALL_CATS.find(c=>c.id===id)||{l:id,i:'💰'};
+
+// ── UTILS ─────────────────────────────────────────────────────────
+const tzs=n=>'TZS '+new Intl.NumberFormat('en-TZ',{maximumFractionDigits:0}).format(n||0);
+const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const mkey=d=>{const x=new Date(d);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}`};
+
+let tTmr;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.style.display='block';
+  clearTimeout(tTmr); tTmr=setTimeout(()=>el.style.display='none',2800);
+}
+function confirm2(title,msg,okLbl,cb){
+  document.getElementById('ct').textContent=title;
+  document.getElementById('cm').textContent=msg;
+  document.getElementById('cok').textContent=okLbl||'OK';
+  document.getElementById('cok').onclick=()=>{cb();closeConf()};
+  document.getElementById('ov').style.display='flex';
+}
+function closeConf(){document.getElementById('ov').style.display='none'}
+function showErr(id,msg){const e=document.getElementById(id);e.textContent=msg;e.style.display='block'}
+function hideErr(id){document.getElementById(id).style.display='none'}
+function showScr(id){['splash','authScr','mainScr'].forEach(s=>document.getElementById(s).classList.toggle('on',s===id))}
+
+function togglePw(id,btn){
+  const el=document.getElementById(id);
+  const show=el.type==='password';
+  el.type=show?'text':'password';
+  btn.textContent=show?'🙈':'👁';
+}
+function checkStr(p){
+  const bar=document.getElementById('sbar'),lbl=document.getElementById('slbl');
+  if(!bar) return;
+  if(!p){bar.className='strength-bar';lbl.textContent='';return}
+  const strong=/[A-Z]/.test(p)&&/\d/.test(p)&&p.length>=8;
+  const med=p.length>=6;
+  bar.className='strength-bar '+(strong?'s':med?'m':'w');
+  lbl.className='strength-lbl '+(strong?'s':med?'m':'w');
+  lbl.textContent=strong?'Strong':med?'Medium':'Too short';
+}
+
+// ── AUTH ──────────────────────────────────────────────────────────
+function authTab(tab){
+  document.getElementById('tab-login').classList.toggle('on',tab==='login');
+  document.getElementById('tab-signup').classList.toggle('on',tab==='signup');
+  document.getElementById('loginForm').style.display=tab==='login'?'block':'none';
+  document.getElementById('signupForm').style.display=tab==='signup'?'block':'none';
+  hideErr('lErr'); hideErr('sErr');
+}
+
+function doLogin(){
+  const email=document.getElementById('lEmail').value.trim().toLowerCase();
+  const pass=document.getElementById('lPass').value;
+  hideErr('lErr');
+  if(!email||!pass){showErr('lErr','Please fill in all fields.');return}
+  const users=getUsers();
+  if(!users[email]){showErr('lErr','No account found with this email.');return}
+  if(users[email].hash!==hashPass(pass)){showErr('lErr','Incorrect password. Try again.');return}
+  startSession({email,name:users[email].name});
+}
+
+function doSignup(){
+  const name=document.getElementById('sName').value.trim();
+  const email=document.getElementById('sEmail').value.trim().toLowerCase();
+  const pass=document.getElementById('sPass').value;
+  const pass2=document.getElementById('sPass2').value;
+  hideErr('sErr');
+  if(!name||!email||!pass||!pass2){showErr('sErr','Please fill in all fields.');return}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showErr('sErr','Please enter a valid email address.');return}
+  if(pass.length<6){showErr('sErr','Password must be at least 6 characters.');return}
+  if(pass!==pass2){showErr('sErr','Passwords do not match.');return}
+  const users=getUsers();
+  if(users[email]){showErr('sErr','An account with this email already exists. Try logging in.');return}
+  users[email]={name,hash:hashPass(pass)};
+  saveUsers(users);
+  startSession({email,name});
+  toast(`Welcome to VAULT, ${name}! 🎉`);
+}
+
+function startSession(user){
+  USER=user;
+  LS.set(SKEY,user);
+  TXN=getTxn(user.email);
+  document.getElementById('hdrUser').textContent=user.name+' · '+user.email;
+  showScr('mainScr');
+  go('dash');
+}
+
+function doLogout(){
+  confirm2('Logout?','Your data is saved. See you next time!','Logout',()=>{
+    USER=null; TXN=[]; LS.del(SKEY);
+    ['lEmail','lPass','sName','sEmail','sPass','sPass2'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});
+    hideErr('lErr'); hideErr('sErr');
+    authTab('login');
+    showScr('authScr');
+  });
+}
+
+// ── NAV ───────────────────────────────────────────────────────────
+function go(v){
+  if(v==='add'){EDIT=null;ADD_TYPE='expense';SEL_CAT='food'}
+  VIEW=v;
+  ['dash','list','add','sms','export'].forEach(x=>{
+    const b=document.getElementById('nb-'+x);
+    if(b) b.classList.toggle('on',x===v);
+  });
+  render();
+}
+
+function render(){
+  const c=document.getElementById('content');
+  if(VIEW==='dash')   c.innerHTML=renderDash();
+  if(VIEW==='list')   c.innerHTML=renderList();
+  if(VIEW==='add')    c.innerHTML=renderForm();
+  if(VIEW==='sms')    c.innerHTML=renderSms();
+  if(VIEW==='export') c.innerHTML=renderExport();
+  c.scrollTop=0;
+}
+
+function persist(){saveTxn(USER.email,TXN)}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────
+function renderDash(){
+  const totalIn=TXN.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const totalOut=TXN.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const bal=totalIn-totalOut;
+  const now=new Date();
+  const m6=Array.from({length:6},(_,i)=>{
+    const d=new Date(now.getFullYear(),now.getMonth()-(5-i),1);
+    return{key:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,lbl:MONTHS[d.getMonth()]};
+  }).map(m=>({...m,
+    inc:TXN.filter(t=>t.type==='income'&&mkey(t.date)===m.key).reduce((s,t)=>s+t.amount,0),
+    exp:TXN.filter(t=>t.type==='expense'&&mkey(t.date)===m.key).reduce((s,t)=>s+t.amount,0)
+  }));
+  const mx=Math.max(...m6.flatMap(m=>[m.inc,m.exp]),1);
+  const cbs=CATS.expense.map(c=>({...c,total:TXN.filter(t=>t.type==='expense'&&t.category===c.id).reduce((s,t)=>s+t.amount,0)}))
+    .filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
+  const cbtot=cbs.reduce((s,c)=>s+c.total,0)||1;
+  const recent=[...TXN].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
+  return `
+  <div class="bal-card">
+    <div class="bal-lbl">Net Balance</div>
+    <div class="bal-num ${bal>=0?'pos':'neg'}">${tzs(bal)}</div>
+    <div class="bal-row">
+      <div class="bs"><div class="bs-lbl" style="color:var(--grn)">↑ Income</div><div class="bs-val" style="color:var(--grn)">${tzs(totalIn)}</div></div>
+      <div class="bdiv"></div>
+      <div class="bs"><div class="bs-lbl" style="color:var(--red)">↓ Expenses</div><div class="bs-val" style="color:var(--red)">${tzs(totalOut)}</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="sec">6-Month Overview</div>
+    <div class="bars">${m6.map(m=>`<div class="bc"><div class="bp"><div class="b bi" style="height:${m.inc?Math.max((m.inc/mx)*100,3):0}%"></div><div class="b be" style="height:${m.exp?Math.max((m.exp/mx)*100,3):0}%"></div></div><div class="blbl">${m.lbl}</div></div>`).join('')}</div>
+    <div class="leg"><div class="li"><div class="ld" style="background:#00cc8540"></div>Income</div><div class="li"><div class="ld" style="background:#ff306040"></div>Expenses</div></div>
+  </div>
+  ${cbs.length?`<div class="card"><div class="sec">Expense Breakdown</div>${cbs.slice(0,6).map(c=>`<div class="cb-row"><div class="cb-top"><span class="cb-name">${c.i} ${c.l}</span><span class="cb-val">${tzs(c.total)}</span></div><div class="cb-bg"><div class="cb-fill" style="width:${(c.total/cbtot)*100}%"></div></div></div>`).join('')}</div>`:''}
+  <div class="sec">Recent Activity</div>
+  ${recent.length===0?`<div class="empty"><div class="ei">💸</div>No transactions yet.<br>Tap <strong style="color:var(--acc)">+</strong> to add your first one.</div>`:''}
+  ${recent.map(t=>rowHtml(t,false)).join('')}
+  ${TXN.length>5?`<button class="btn-ghost" onclick="go('list')">View all ${TXN.length} transactions →</button>`:''}`;
+}
+
+// ── LIST ──────────────────────────────────────────────────────────
+function renderList(){
+  const shown=[...TXN].sort((a,b)=>new Date(b.date)-new Date(a.date)).filter(t=>FILTER==='all'||t.type===FILTER);
+  return `<div class="frow">${['all','income','expense'].map(f=>`<button class="fchip ${FILTER===f?'on':''}" onclick="setFilter('${f}')">${f==='all'?'All':f==='income'?'↑ Income':'↓ Expense'}</button>`).join('')}</div>
+  ${shown.length===0?`<div class="empty"><div class="ei">🔍</div>No transactions found.</div>`:''}
+  ${shown.map(t=>rowHtml(t,true)).join('')}`;
+}
+function setFilter(f){FILTER=f;render()}
+function rowHtml(t,actions){
+  const c=cat(t.category);
+  return `<div class="tr"><div class="ti ${t.type==='income'?'ti-in':'ti-out'}">${c.i}</div><div class="tm"><div class="tn">${esc(t.note||c.l)}</div><div class="td">${t.date} · ${c.l}</div></div><div class="ta ${t.type==='income'?'in':'out'}">${t.type==='income'?'+':'-'}${tzs(t.amount)}</div>${actions?`<div class="tbtns"><button class="ab" onclick="startEdit('${t.id}')">Edit</button><button class="ab del" onclick="askDel('${t.id}','${esc(t.note||c.l)}')">Delete</button></div>`:''}</div>`;
+}
+function startEdit(id){EDIT=TXN.find(t=>t.id===id);if(!EDIT)return;ADD_TYPE=EDIT.type;SEL_CAT=EDIT.category;go('add')}
+function askDel(id,label){confirm2('Delete Transaction?',`"${label}" will be permanently removed.`,'Delete',()=>{TXN=TXN.filter(t=>t.id!==id);persist();toast('Deleted.');render()})}
+
+// ── ADD FORM ──────────────────────────────────────────────────────
+function renderForm(){
+  const t=EDIT, type=t?t.type:ADD_TYPE, cats=CATS[type];
+  const selId=t?t.category:(type==='income'?'salary':'food');
+  const today=new Date().toISOString().split('T')[0];
+  return `<div class="ftitle">${t?'Edit Transaction':'New Transaction'}</div>
+  <div class="type-toggle"><button class="type-btn ${type==='income'?'in':''}" onclick="switchType('income')">↑ Income</button><button class="type-btn ${type==='expense'?'out':''}" onclick="switchType('expense')">↓ Expense</button></div>
+  <div class="fg"><label class="fl">Amount (TZS)</label><input class="fi big" type="number" id="fa" min="1" step="1" placeholder="0" value="${t?t.amount:''}"/></div>
+  <div class="fg"><label class="fl">Category</label><div class="chips" id="chips">${cats.map(c=>`<button type="button" class="chip ${c.id===selId?(type==='income'?'si':'so'):''}" data-id="${c.id}" onclick="pickCat('${c.id}',this)">${c.i} ${c.l}</button>`).join('')}</div></div>
+  <div class="fg"><label class="fl">Note</label><input class="fi" type="text" id="fn" placeholder="Optional description…" value="${esc(t?.note||'')}"/></div>
+  <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="fd" value="${t?t.date:today}"/></div>
+  <div class="err-box" id="fe" style="display:none"></div>
+  <button class="btn ${type==='income'?'btn-g':'btn-r'}" onclick="submitForm()">${t?'Save Changes':`Add ${type==='income'?'Income':'Expense'}`}</button>
+  ${t?`<button class="btn-ghost" onclick="cancelEdit()">Cancel</button>`:''}`;
+}
+function switchType(type){ADD_TYPE=type;EDIT=null;SEL_CAT=type==='income'?'salary':'food';render()}
+function pickCat(id,el){SEL_CAT=id;document.querySelectorAll('.chip').forEach(c=>c.classList.remove('si','so'));el.classList.add(ADD_TYPE==='income'?'si':'so')}
+function cancelEdit(){EDIT=null;go('dash')}
+function submitForm(){
+  const amount=parseFloat(document.getElementById('fa').value);
+  const note=document.getElementById('fn').value.trim();
+  const date=document.getElementById('fd').value;
+  const fe=document.getElementById('fe');
+  fe.style.display='none';
+  if(!amount||amount<=0){fe.textContent='Please enter a valid amount.';fe.style.display='block';return}
+  if(!date){fe.textContent='Please pick a date.';fe.style.display='block';return}
+  const selChip=document.querySelector('.chip.si,.chip.so');
+  const catId=selChip?selChip.getAttribute('data-id'):SEL_CAT;
+  const data={type:EDIT?EDIT.type:ADD_TYPE,amount,category:catId,note,date};
+  if(EDIT){TXN=TXN.map(t=>t.id===EDIT.id?{...t,...data}:t);toast('Transaction updated ✓')}
+  else{TXN.unshift({id:uid(),...data});toast(data.type==='income'?'Income saved 🎉':'Expense recorded ✓')}
+  EDIT=null;persist();go('dash');
+}
+
+// ── SMS ───────────────────────────────────────────────────────────
+function renderSms(){return `
+  <div class="sms-box"><div class="sms-ttl">📲 SMS Auto-Parser</div><div class="sms-body">Copy an SMS from M-Pesa, Airtel Money or Tigo Pesa, paste it below, and VAULT will detect the transaction automatically.</div></div>
+  <div class="card"><div class="sec">Paste SMS Message</div>
+  <div class="fg"><label class="fl">SMS Text</label><textarea class="fi" id="smsIn" rows="5" placeholder="Paste your M-Pesa / Airtel / Tigo SMS here…" style="resize:vertical;line-height:1.7"></textarea></div>
+  <div class="err-box" id="smsErr" style="display:none"></div>
+  <div id="smsPrev" style="display:none;margin-bottom:14px"></div>
+  <button class="btn btn-p" onclick="detectSms()">🔍 Detect Transaction</button></div>
+  <div class="pat"><p>Supported patterns</p>
+  <code>Umetuma TZS 5,000 → Expense (M-Pesa)</code>
+  <code>Umepokea TZS 10,000 → Income (M-Pesa)</code>
+  <code>Umetuma Tzs 5,000 → Expense (Airtel/Tigo)</code>
+  <code>Umepokea Tzs 10,000 → Income (Airtel/Tigo)</code></div>`}
+
+function parseSMS(body){
+  if(!body) return null;
+  const today=new Date().toISOString().split('T')[0];
+  let m;
+  m=body.match(/[Uu]metuma\s+TZS\s*([\d,]+)/);
+  if(m) return{type:'expense',amount:parseInt(m[1].replace(/,/g,''),10),category:'mpesa_out',note:'M-Pesa: '+body.slice(0,80).trim(),date:today};
+  m=body.match(/[Uu]mepokea\s+TZS\s*([\d,]+)/);
+  if(m) return{type:'income',amount:parseInt(m[1].replace(/,/g,''),10),category:'mpesa_in',note:'M-Pesa: '+body.slice(0,80).trim(),date:today};
+  m=body.match(/[Uu]metuma\s+[Tt]zs\.?\s*([\d,]+)/);
+  if(m){const a=/airtel/i.test(body);return{type:'expense',amount:parseInt(m[1].replace(/,/g,''),10),category:a?'airtel_out':'tigo_out',note:(a?'Airtel':'Tigo')+': '+body.slice(0,80).trim(),date:today}}
+  m=body.match(/[Uu]mepokea\s+[Tt]zs\.?\s*([\d,]+)/);
+  if(m){const a=/airtel/i.test(body);return{type:'income',amount:parseInt(m[1].replace(/,/g,''),10),category:a?'airtel_in':'tigo_in',note:(a?'Airtel':'Tigo')+': '+body.slice(0,80).trim(),date:today}}
+  return null;
+}
+function detectSms(){
+  const body=document.getElementById('smsIn').value;
+  const errEl=document.getElementById('smsErr'),prev=document.getElementById('smsPrev');
+  errEl.style.display='none';prev.style.display='none';
+  const r=parseSMS(body);
+  if(!r){errEl.textContent='No transaction detected. Check the SMS matches the patterns below.';errEl.style.display='block';return}
+  const c=cat(r.category);
+  prev._data=r;
+  prev.innerHTML=`<div class="tr"><div class="ti ${r.type==='income'?'ti-in':'ti-out'}">${c.i}</div><div class="tm"><div class="tn">${esc(r.note)}</div><div class="td">${r.date} · Detected from SMS</div></div><div class="ta ${r.type==='income'?'in':'out'}">${r.type==='income'?'+':'-'}${tzs(r.amount)}</div></div><button class="btn btn-g" onclick="saveSms()">✓ Save This Transaction</button>`;
+  prev.style.display='block';
+}
+function saveSms(){
+  const prev=document.getElementById('smsPrev');const d=prev._data;if(!d)return;
+  TXN.unshift({id:uid(),...d});persist();toast('SMS transaction saved! ✓');
+  document.getElementById('smsIn').value='';prev.style.display='none';
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────
+function renderExport(){
+  const totalIn=TXN.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const totalOut=TXN.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  return `<div class="card"><div class="sec">Export Your Data</div>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.7">Download all transactions as a CSV — opens in Excel or Google Sheets.</p>
+  <div style="display:flex;gap:10px;margin-bottom:18px">
+    <div style="flex:1;background:var(--surf2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Total Income</div><div style="font-size:15px;font-weight:500;color:var(--grn)">${tzs(totalIn)}</div></div>
+    <div style="flex:1;background:var(--surf2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Total Expense</div><div style="font-size:15px;font-weight:500;color:var(--red)">${tzs(totalOut)}</div></div>
+  </div>
+  <button class="btn btn-p" onclick="exportCSV()" ${TXN.length===0?'disabled':''}>↓ Download CSV (${TXN.length} records)</button></div>
+  <div class="card" style="border-color:#ff306030"><div class="sec" style="color:var(--red)">⚠️ Danger Zone</div>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.7">Permanently delete all your transactions. Cannot be undone.</p>
+  <button class="btn btn-r" onclick="clearAll()" ${TXN.length===0?'disabled':''}>Delete All My Data</button></div>
+  <div class="card"><div class="sec">Account Info</div>
+  <p style="font-size:13px;color:var(--muted);line-height:1.9">Logged in as<br><strong style="color:var(--text);font-size:15px">${esc(USER.name)}</strong><br>${esc(USER.email)}</p>
+  <button class="btn-ghost" style="margin-top:16px" onclick="doLogout()">Logout</button></div>`;
+}
+function exportCSV(){
+  if(!TXN.length){toast('No data to export.');return}
+  const rows=[['Date','Type','Category','Amount (TZS)','Note']];
+  [...TXN].sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(t=>rows.push([t.date,t.type,cat(t.category).l,t.amount,t.note||'']));
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`vault-${USER.email.split('@')[0]}-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click(); toast('CSV downloaded ✓');
+}
+function clearAll(){confirm2('Delete ALL Data?',`All ${TXN.length} transactions will be permanently erased.`,'Delete All',()=>{TXN=[];persist();toast('All data cleared.');render()})}
+
+// ── INIT ──────────────────────────────────────────────────────────
+setTimeout(()=>{
+  const sess=LS.get(SKEY);
+  if(sess?.email){
+    const users=getUsers();
+    if(users[sess.email]){startSession(sess);return}
+  }
+  showScr('authScr');
+},900);
+</script>
+</body>
+</html>
